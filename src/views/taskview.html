@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tasks</title>
+
+    <!-- Add Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <div id="add" class="container mt-3">
+      <label for="Tasks" class="form-label">Add a New Task</label>
+      <div class="input-group mb-3">
+        <input type="text" class="form-control" id="task" />
+        <button class="btn btn-primary" onclick="addTask(event)">Add</button>
+      </div>
+    </div>
+    <div id="table" class="container mt-3">
+      <h2>Tasks</h2>
+    </div>
+
+  <script>
+    async function viewAll() {
+      try {
+        const viewTasks = await fetch("http://localhost:443/tasks");
+        const taskData = await viewTasks.json();
+        viewData(taskData);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    function viewData(taskData) {
+      const sortedData = taskData.sort((a, b) => a.id - b.id);
+
+      const table = document.createElement("table");
+      table.style='width:100%';
+      const headerRow = document.createElement("tr");
+      const idHeader = document.createElement("th");
+      const taskHeader = document.createElement("th");
+      const timeHeader = document.createElement("th");
+      const completedHeader = document.createElement("th");
+      const actionsHeader = document.createElement("th");
+      idHeader.textContent = "ID";
+      taskHeader.textContent = "Task";
+      timeHeader.textContent = "Timestamps";
+      completedHeader.textContent = "Completed";
+      actionsHeader.textContent = "Actions";
+      headerRow.appendChild(idHeader);
+      headerRow.appendChild(taskHeader);
+      headerRow.appendChild(timeHeader);
+      headerRow.appendChild(completedHeader);
+      headerRow.appendChild(actionsHeader);
+      table.appendChild(headerRow);
+
+      sortedData.forEach((task, index) => {
+        const row = document.createElement("tr");
+        const idCell = document.createElement("td");
+        const taskCell = document.createElement("td");
+        const timeCell = document.createElement("td");
+        const completedCell = document.createElement("td");
+        const actionsCell = document.createElement("td");
+
+        // Display incrementing IDs
+        idCell.textContent = index + 1;
+
+        taskCell.textContent = task.task;
+        timeCell.textContent = task.timestamps;
+        completedCell.textContent = task.completed ? "Yes" : "No";
+
+        const completeButton = document.createElement("button");
+        completeButton.textContent = "Mark as Completed";
+        completeButton.addEventListener("click", async () => {
+          try {
+            const response = await fetch(
+              `http://localhost:443/task/update/${task.id}`,
+              {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+            const updatedTask = await response.json();
+            console.log(updatedTask);
+            taskCell.textContent = updatedTask.task;
+            timeCell.textContent = updatedTask.timestamps;
+            completedCell.textContent = updatedTask.completed ? "Yes" : "No";
+          } catch (error) {
+            console.log(error);
+          }
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", async () => {
+          try {
+            const response = await fetch(
+              `http://localhost:443/task/delete/${task.id}`,
+              {
+                method: "DELETE",
+              }
+            );
+            const deletedTask = await response.json();
+            console.log(deletedTask);
+            row.remove();
+          } catch (error) {
+            console.log(error);
+          }
+        });
+
+        actionsCell.appendChild(completeButton);
+        actionsCell.appendChild(deleteButton);
+
+        row.appendChild(idCell);
+        row.appendChild(taskCell);
+        row.appendChild(timeCell);
+        row.appendChild(completedCell);
+        row.appendChild(actionsCell);
+        table.appendChild(row);
+      });
+
+      const tableDiv = document.querySelector("#table");
+      tableDiv.appendChild(table);
+    }
+
+    viewAll();
+
+    async function addTask(e) {
+      e.preventDefault();
+      window.location.reload();
+      try {
+        const task = document.querySelector("#task").value;
+        const add = await fetch("http://localhost:443/task/add", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ task: task }),
+        });
+        const newTask = await add.json();
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  </script>
+</html>
